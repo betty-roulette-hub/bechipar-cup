@@ -150,6 +150,8 @@ body{min-width:0} main{padding:0 14px 30px}.curtain{min-width:0;width:5%;opacity
 .main-nav a[href="cinema.html"]{flex-grow:1.25;}
 }
 .main-nav a[hidden]{display:none!important;}
+</style><style>#support-content.support-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;align-items:stretch}.support-card{border:3px double #c69c55;background:#401814;padding:20px 8px;text-align:center;color:#f6dfad;min-width:0;overflow-wrap:anywhere;display:flex;flex-direction:column;align-items:center}.support-avatar{width:100px;height:100px;object-fit:cover;border-radius:50%;border:3px double #d7b16b;display:block;margin:0 auto 12px;background:#f3dbac}.support-placeholder{display:grid;place-items:center;font-size:36px;color:#6d231e}.support-card h3{margin:8px 0;font-size:20px}.support-card p{white-space:pre-wrap}.support-links{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;margin-top:auto;padding-top:6px;max-width:100%}.support-links a{color:#f6dfad;border:1px solid #b98d4b;padding:5px 7px;text-decoration:none;font-size:13px;display:inline-flex;align-items:center;justify-content:center;min-height:34px}.support-role{font-size:13px;letter-spacing:.12em;color:#e5bc78}
+@media(max-width:760px){#support-content.support-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.support-card{padding:16px 6px}.support-avatar{width:clamp(64px,20vw,100px);height:clamp(64px,20vw,100px)}.support-card h3{font-size:17px}.support-links a{min-height:44px;padding:4px 7px}}
 </style></head>
 <body id="top">
 <a class="skip-link" href="#tournaments">大会一覧へスキップ</a>
@@ -349,5 +351,10 @@ const footer=document.getElementById('footer-links');if(data.contact)footer.appe
 </script><script>
 (()=>{const button=document.querySelector('.mobile-menu'),nav=document.getElementById('main-navigation'),mq=matchMedia('(max-width:600px)');function setOpen(open){button.setAttribute('aria-expanded',String(open));nav.hidden=mq.matches&&!open;}function sync(){button.hidden=!mq.matches;setOpen(false)}button.addEventListener('click',()=>setOpen(button.getAttribute('aria-expanded')!=='true'));nav.addEventListener('click',e=>{if(mq.matches&&e.target.closest('a'))setOpen(false)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&mq.matches&&button.getAttribute('aria-expanded')==='true'){setOpen(false);button.focus()}});mq.addEventListener('change',sync);sync()})();
 </script>
-</body>
+<script type="module">
+import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+const db=createClient('https://jvvrhlmcrmjmwvxhpeoq.supabase.co','sb_publishable_C0CPGjwUsvJ9zrhMqdDXuQ_ufFnQTpY',{auth:{persistSession:false}});const root=document.getElementById('support-content');
+const node=(tag,txt,cls)=>{const n=document.createElement(tag);if(txt)n.textContent=txt;if(cls)n.className=cls;return n};
+try{const {data,error}=await db.rpc('cup_support_public');if(error)throw error;if(data.length){root.replaceChildren();root.classList.add('support-grid');for(const r of data){const c=node('article',null,'support-card');let im=node('div','★','support-avatar support-placeholder');if(r.avatar&&/^data:image\/webp;base64,[A-Za-z0-9+/=]+$/.test(r.avatar)){const pic=node('img',null,'support-avatar');pic.alt=r.name+'のアイコン';pic.loading='lazy';pic.src=r.avatar;pic.onerror=()=>pic.replaceWith(im);c.append(pic)}else c.append(im);c.append(node('div',r.role,'support-role'),node('h3',r.name));if(r.description)c.append(node('p',r.description));const links=node('div',null,'support-links');for(const [k,label,hosts] of [['x_url','X',['x.com','www.x.com','twitter.com','www.twitter.com']],['youtube_url','YouTube',['youtube.com','www.youtube.com','youtu.be']],['twitch_url','Twitch',['twitch.tv','www.twitch.tv']]]){try{const u=new URL(r[k]);if(u.protocol!=='https:'||!hosts.includes(u.hostname))continue;const l=node('a',label);l.href=u.href;l.target='_blank';l.rel='noopener noreferrer';links.append(l)}catch{}}c.append(links);root.append(c)}}}catch(e){console.warn('Supporters unavailable',e);root.append(node('p','協賛・協力者の最新情報を取得できませんでした。','hub-note'))}
+</script></body>
 </html>
