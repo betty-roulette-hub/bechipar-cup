@@ -364,16 +364,50 @@ body{min-width:0} main{padding:0 14px 30px}.curtain{min-width:0;width:5%;opacity
   }
 }</script><script>
 const data=JSON.parse(document.getElementById('site-data').textContent);
-const labels={archive:'開催終了',pending:'情報準備中',soon:'COMING SOON',entry:'ENTRY OPEN / 募集中',live:'NOW SHOWING / 開催中',scheduled:'開催予定'};
+const labels={archive:'開催終了',pending:'情報準備中',soon:'COMING SOON',entry:'ENTRY OPEN / 募集中',live:'NOW SHOWING / 開催中',scheduled:'開催予定',cancelled:'開催中止'};
 const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text)n.textContent=text;if(cls)n.className=cls;return n};
 const safeURL=u=>{try{const v=new URL(u);return ['https:','http:'].includes(v.protocol)?v.href:null}catch{return null}};
 function link(label,url,cls='poster-action'){const u=safeURL(url);const n=el(u?'a':'span',label,cls+(u?'':' is-disabled'));if(u)n.href=u;return n}
-const grid=document.querySelector('.poster-grid');const originals=new Map([...grid.children].map(c=>[Number(c.dataset.volume),c]));grid.replaceChildren();
-const sorted=[...data.events].sort((a,b)=>a.volume-b.volume);const next=sorted.find(e=>e.state==='soon');const events=sorted.filter(e=>e.state!=='soon'||e===next||e.volume<=Number(data.previewThrough||3));
+const grid=document.querySelector('.poster-grid');const originals=new Map([...grid.children].map(c=>[Number(c.dataset.volume),c.cloneNode(true)]));
+const eventState={planned:'scheduled',recruiting:'entry',running:'live',completed:'archive',cancelled:'cancelled'};
+let events=[],countdownTimer=null;
+function mergePublicEvents(manual,rows){
+ if(!Array.isArray(rows))throw Error('大会データ形式が不正です');
+ const map=new Map(manual.map(e=>[e.volume,{...e}]));
+ for(const r of rows){
+  const volume=Number(r.volume);if(!Number.isSafeInteger(volume)||volume<1||!eventState[r.status]||typeof r.name!=='string'||!r.name.trim())continue;
+  const prior=map.get(volume)||{volume};
+  const raw=typeof r.event_date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(r.event_date)?r.event_date:null;
+  const knownStart=typeof prior.startAt==='string'&&raw&&prior.startAt.slice(0,10)===raw;
+  let date=null;
+  if(raw){
+   const d=new Date(raw+'T00:00:00+09:00');
+   if(!Number.isNaN(d.getTime()))date=knownStart&&prior.date?prior.date:new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',year:'numeric',month:'long',day:'numeric',weekday:'short'}).format(d);
+  }
+  const cap=Number(r.capacity);
+  map.set(volume,{...prior,volume,title:r.name.trim(),kind:r.kind,state:eventState[r.status],date,dateKey:raw,startAt:knownStart?prior.startAt:null,capacity:Number.isSafeInteger(cap)&&cap>0?cap:null,url:safeURL(r.official_url)||safeURL(prior.url)||null});
+ }
+ return [...map.values()];
+}
+function featureEvent(items,preferred){
+ const current=items.filter(e=>e.state==='live').sort((a,b)=>b.volume-a.volume);
+ if(current.length)return current[0];
+ const upcoming=items.filter(e=>['scheduled','entry'].includes(e.state));
+ const byDate=(a,b)=>(a.dateKey||a.startAt?.slice(0,10)||'9999-99-99').localeCompare(b.dateKey||b.startAt?.slice(0,10)||'9999-99-99')||a.volume-b.volume;
+ if(upcoming.length)return upcoming.sort(byDate)[0];
+ return items.filter(e=>e.state==='archive').sort((a,b)=>b.volume-a.volume)[0]||items.find(e=>e.volume===preferred&&e.state!=='soon'&&e.state!=='cancelled')||null;
+}
+function renderEvents(source){
+ grid.replaceChildren();
+ const sorted=[...source].sort((a,b)=>a.volume-b.volume);const next=sorted.find(e=>e.state==='soon');events=sorted.filter(e=>e.state!=='soon'||e===next||e.volume<=Number(data.previewThrough||3));
+ if(countdownTimer!==null){clearInterval(countdownTimer);countdownTimer=null}
+
 function status(e){const n=el('span',labels[e.state]||'情報準備中','status');n.dataset.state=e.state;return n}
-function detail(e){return [e.date?'開催日：'+e.date:null,e.teams?'参加：'+e.teams+'チーム':null,e.winner?'優勝：'+e.winner:null].filter(Boolean)}
-for(const e of events){let c=originals.get(e.volume);if(!c){c=el('article',null,'poster-item');const p=el('div',null,'poster-card');p.append(el('span','★ べちぱーCup ★','poster-kicker'),el('strong','Vol.'+e.volume,'poster-volume'),el('span','映画チケット','poster-title'));c.append(p,el('div',null,'event-meta'));}c.dataset.volume=e.volume;const p=c.querySelector('.poster-card');if(typeof e.poster==='string' && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(e.poster)){const img=el('img');img.src=e.poster;img.alt='Vol.'+e.volume+' 大会ポスター';p.classList.add('poster-card--image');p.replaceChildren(img);c.querySelectorAll('.sample-caption').forEach(n=>n.remove())};const old=c.querySelector('.poster-visual-link');if(old){old.replaceWith(p)};if(safeURL(e.url)&&e.state!=='soon'){const a=el('a',null,'poster-visual-link');a.href=safeURL(e.url);a.setAttribute('aria-label','Vol.'+e.volume+' 公式サイト');p.replaceWith(a);a.append(p)};c.querySelectorAll('.poster-action').forEach(n=>n.remove());const m=c.querySelector('.event-meta');m.replaceChildren(status(e));for(const d of detail(e))m.append(el('div',d));if(e.state==='soon')m.append(el('div','次回開催は未確定です。'));m.append(link(e.state==='soon'?'次回予告':e.url?'大会サイトを見る ›':'サイト準備中',e.state==='soon'?null:e.url));grid.append(c)}
-const f=events.find(e=>e.volume===data.featured&&e.state!=='soon')||events.filter(e=>e.state!=='soon').at(-1);if(f){const src=grid.querySelector(`[data-volume="${f.volume}"] img`);const im=document.getElementById('feature-image');if(src){im.src=src.src;im.hidden=false}else{im.removeAttribute('src');im.hidden=true};document.getElementById('feature-title').textContent='べちぱーCup Vol.'+f.volume;document.getElementById('feature-status').replaceWith(status(f));document.getElementById('feature-details').textContent=detail(f).join(' ／ ')||'開催情報は確定後に掲載します。';const fl=document.getElementById('feature-links');fl.replaceChildren();fl.append(link(f.url?'大会公式サイトへ ›':'大会サイト準備中',f.url));if(f.stream)fl.append(link('大会配信を見る ›',f.stream));const target=f.startAt?Date.parse(f.startAt):NaN;const cd=document.getElementById('countdown');function tick(){const ms=target-Date.now();cd.hidden=!Number.isFinite(ms)||ms<=0||!['scheduled','entry'].includes(f.state);if(!cd.hidden){const h=Math.floor(ms/3600000);cd.textContent='開催まで '+Math.floor(h/24)+'日 '+h%24+'時間 '+Math.floor(ms/60000)%60+'分'}}tick();setInterval(tick,1000)}
+function detail(e){return [e.date?'開催日：'+e.date:['scheduled','entry'].includes(e.state)?'開催日：未定':null,e.teams?'参加：'+e.teams+'チーム':null,e.capacity&&e.capacity!==e.teams?'定員：'+e.capacity+'チーム':null,e.winner?'優勝：'+e.winner:null].filter(Boolean)}
+for(const e of events){let c=originals.get(e.volume)?.cloneNode(true);if(!c){c=el('article',null,'poster-item');const p=el('div',null,'poster-card');p.append(el('span','★ べちぱーCup ★','poster-kicker'),el('strong','Vol.'+e.volume,'poster-volume'),el('span','映画チケット','poster-title'));c.append(p,el('div',null,'event-meta'));}c.dataset.volume=e.volume;const p=c.querySelector('.poster-card');if(typeof e.poster==='string' && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(e.poster)){const img=el('img');img.src=e.poster;img.alt='Vol.'+e.volume+' 大会ポスター';p.classList.add('poster-card--image');p.replaceChildren(img);c.querySelectorAll('.sample-caption').forEach(n=>n.remove())};const old=c.querySelector('.poster-visual-link');if(old){old.replaceWith(p)};if(safeURL(e.url)&&e.state!=='soon'){const a=el('a',null,'poster-visual-link');a.href=safeURL(e.url);a.setAttribute('aria-label','Vol.'+e.volume+' 公式サイト');p.replaceWith(a);a.append(p)};c.querySelectorAll('.poster-action').forEach(n=>n.remove());const m=c.querySelector('.event-meta');m.replaceChildren(status(e));if(e.title&&e.title!=='べちぱーCup Vol.'+e.volume)m.append(el('div',e.title));for(const d of detail(e))m.append(el('div',d));if(e.state==='soon')m.append(el('div','次回開催は未確定です。'));m.append(link(e.state==='soon'?'次回予告':e.url?'大会サイトを見る ›':'サイト準備中',e.state==='soon'?null:e.url));grid.append(c)}
+const f=featureEvent(events,data.featured);if(f){const src=grid.querySelector(`[data-volume="${f.volume}"] img`);const im=document.getElementById('feature-image');if(src){im.src=src.src;im.hidden=false}else{im.removeAttribute('src');im.hidden=true};document.getElementById('feature-title').textContent=f.title||'べちぱーCup Vol.'+f.volume;const fs=status(f);fs.id='feature-status';document.getElementById('feature-status').replaceWith(fs);document.getElementById('feature-details').textContent=detail(f).join(' ／ ')||'開催情報は確定後に掲載します。';const fl=document.getElementById('feature-links');fl.replaceChildren();fl.append(link(f.url?'大会公式サイトへ ›':'大会サイト準備中',f.url));if(f.stream)fl.append(link('大会配信を見る ›',f.stream));const target=f.startAt?Date.parse(f.startAt):NaN;const cd=document.getElementById('countdown');function tick(){const ms=target-Date.now();cd.hidden=!Number.isFinite(ms)||ms<=0||!['scheduled','entry'].includes(f.state);if(!cd.hidden){const h=Math.floor(ms/3600000);cd.textContent='開催まで '+Math.floor(h/24)+'日 '+h%24+'時間 '+Math.floor(ms/60000)%60+'分'}}tick();if(Number.isFinite(target))countdownTimer=setInterval(tick,1000)}else{const im=document.getElementById('feature-image');im.hidden=true;im.removeAttribute('src');document.getElementById('feature-title').textContent='次回大会準備中';const fs=status({state:'pending'});fs.id='feature-status';document.getElementById('feature-status').replaceWith(fs);document.getElementById('feature-details').textContent='開催情報は確定後に掲載します。';document.getElementById('feature-links').replaceChildren();document.getElementById('countdown').hidden=true}
+}
+renderEvents(data.events);
 function youtubeID(value){try{const u=new URL(value);if(!['https:','http:'].includes(u.protocol))return null;let id=null;if(u.hostname==='youtu.be')id=u.pathname.split('/')[1];else if(['youtube.com','www.youtube.com','m.youtube.com'].includes(u.hostname)){id=u.pathname==='/watch'?u.searchParams.get('v'):/^\/(shorts|embed|live)\//.test(u.pathname)?u.pathname.split('/')[2]:null}return /^[A-Za-z0-9_-]{11}$/.test(id||'')?id:null}catch{return null}}
 const trailer=data.trailer||{};const tid=youtubeID(trailer.url);if(tid){const sec=document.getElementById('official-trailer'),box=document.getElementById('trailer-content');const url='https://www.youtube.com/watch?v='+tid;const title=trailer.title||'べちぱーCup 公式PR動画';const player=el('iframe');player.className='trailer-player';player.title=title;player.loading='lazy';player.referrerPolicy='strict-origin-when-cross-origin';player.setAttribute('allow','encrypted-media; picture-in-picture; fullscreen');player.setAttribute('allowfullscreen','');const external=link('YouTubeで予告編を観る ›',url);external.target='_blank';external.rel='noopener noreferrer';const localPreview=location.protocol!=='https:'&&location.protocol!=='http:'||window.self!==window.top||location.hostname==='localhost'||location.hostname==='127.0.0.1';let media=player;if(!localPreview)player.src='https://www.youtube.com/embed/'+tid+'?autoplay=0&playsinline=1&rel=0';if(localPreview){const thumb=el('a');thumb.className='trailer-thumb';thumb.href=url;thumb.target='_blank';thumb.rel='noopener noreferrer';thumb.setAttribute('aria-label',title+'をYouTubeで観る');const img=el('img');img.src='https://i.ytimg.com/vi/'+tid+'/hqdefault.jpg';img.alt=title;thumb.append(img,el('span','▶','trailer-play'));media=thumb;}box.append(media,el('h3',title),external,el('p','再生できない場合はYouTubeでご覧ください。高評価・チャンネル登録もよろしくお願いします。','hub-note'));sec.hidden=false}
 function records(id,items,empty,render){const box=document.getElementById(id);box.replaceChildren();if(!items.length){box.append(el('p',empty,'hub-note'));return}box.classList.add('record-grid');for(const item of items){const c=el('article',null,'record');render(c,item);box.append(c)}}
@@ -400,6 +434,15 @@ const footer=document.getElementById('footer-links');if(data.contact)footer.appe
 <script type="module">
 import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 const db=createClient('https://jvvrhlmcrmjmwvxhpeoq.supabase.co','sb_publishable_C0CPGjwUsvJ9zrhMqdDXuQ_ufFnQTpY',{auth:{persistSession:false}});const root=document.getElementById('support-content');
+(async()=>{
+ try{
+  const {data:snapshot,error}=await db.rpc('cup_public_snapshot');
+  if(error)throw error;
+  const combined=mergePublicEvents(data.events,snapshot?.tournaments);
+  renderEvents(combined);
+  records('champions-content',events.filter(e=>e.state==='archive'&&e.winner),'初代王者は、まだ決まっていない。ここに刻まれる、最初の栄光は誰の手に。',(c,e)=>{c.append(el('span','Vol.'+e.volume),el('strong',e.winner));if(e.url)c.append(link('大会記録へ',e.url))});
+ }catch(e){console.warn('大会情報の取得に失敗。掲載済みデータを表示します。',e)}
+})();
 const node=(tag,txt,cls)=>{const n=document.createElement(tag);if(txt)n.textContent=txt;if(cls)n.className=cls;return n};
 try{const {data,error}=await db.rpc('cup_support_public');if(error)throw error;if(data.length){root.replaceChildren();root.classList.add('support-grid');for(const r of data){const c=node('article',null,'support-card');let im=node('div','★','support-avatar support-placeholder');if(r.avatar&&/^data:image\/webp;base64,[A-Za-z0-9+/=]+$/.test(r.avatar)){const pic=node('img',null,'support-avatar');pic.alt=r.name+'のアイコン';pic.loading='lazy';pic.src=r.avatar;pic.onerror=()=>pic.replaceWith(im);c.append(pic)}else c.append(im);c.append(node('div',r.role,'support-role'),node('h3',r.name));if(r.description)c.append(node('p',r.description));const links=node('div',null,'support-links');for(const [k,label,hosts] of [['x_url','X',['x.com','www.x.com','twitter.com','www.twitter.com']],['youtube_url','YouTube',['youtube.com','www.youtube.com','youtu.be']],['twitch_url','Twitch',['twitch.tv','www.twitch.tv']]]){try{const u=new URL(r[k]);if(u.protocol!=='https:'||!hosts.includes(u.hostname))continue;const l=node('a',label);l.href=u.href;l.target='_blank';l.rel='noopener noreferrer';links.append(l)}catch{}}c.append(links);root.append(c)}}}catch(e){console.warn('Supporters unavailable',e);root.append(node('p','協賛・協力者の最新情報を取得できませんでした。','hub-note'))}
 </script></body>
