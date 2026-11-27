@@ -192,6 +192,29 @@ body{min-width:0} main{padding:0 14px 30px}.curtain{min-width:0;width:5%;opacity
 @media(max-width:360px){.team-recruitment-grid{grid-template-columns:1fr}}
 .official-x-top{display:inline-flex;align-items:center;gap:9px;padding:10px 22px;margin:10px auto 4px;background:#2c1410;color:#f3d69e!important;border:3px double #c69c58;text-decoration:none;font-weight:bold;box-shadow:0 4px 12px #160805;line-height:1.4}.official-x-top:hover{background:#50251b;color:#fff0c4!important}.official-x-top:focus-visible{outline:3px solid #f3d69e;outline-offset:3px}.official-x-top span{font-size:20px}@media(max-width:600px){.official-x-top{padding:9px 16px;font-size:14px}}
  .vol1-prize{position:relative;isolation:isolate;margin:17px 0 7px;padding:25px 16px 21px;border:5px double #e9bd61;background:radial-gradient(ellipse at 50% 10%,#a13c22 0%,#641b19 36%,#2b0d0a 83%);color:#fff0b5;text-align:center;box-shadow:0 0 20px #f4c25b45,0 7px 18px #130603,inset 0 0 24px #0d0202;overflow:hidden}.vol1-prize:before,.vol1-prize:after{content:"";position:absolute;pointer-events:none;z-index:0;inset:0;border-radius:2px;background:radial-gradient(circle at center,#fffbe3 0 2px,#ffe090 3px,#eab44c 4px,#ac6527 5px,transparent 6px) top 6px left 12px/20px 12px repeat-x,radial-gradient(circle at center,#fffbe3 0 2px,#ffe090 3px,#eab44c 4px,#ac6527 5px,transparent 6px) bottom 6px left 12px/20px 12px repeat-x;filter:drop-shadow(0 0 5px #ffc65a)}.vol1-prize:after{background:radial-gradient(circle at center,#fffbe3 0 2px,#ffe090 3px,#eab44c 4px,#ac6527 5px,transparent 6px) top 19px left 5px/12px 20px repeat-y,radial-gradient(circle at center,#fffbe3 0 2px,#ffe090 3px,#eab44c 4px,#ac6527 5px,transparent 6px) top 19px right 5px/12px 20px repeat-y}.vol1-prize{max-width:390px;padding:23px 25px 21px;margin:12px auto 5px;border-color:#ba8a3c;box-shadow:0 0 18px #e9b95666,0 7px 19px #130603,inset 0 0 20px #150503,inset 0 0 0 22px #42140c88}.vol1-prize>*{position:relative;z-index:1}.vol1-prize strong{display:block;font-family:Georgia,"Yu Mincho",serif;font-weight:900;font-size:clamp(25px,4vw,35px);line-height:1.25;letter-spacing:.025em;color:#ffe7a7;text-shadow:0 2px 0 #a46624,0 0 16px #ffca5e55;margin:1px auto 3px}.vol1-prize small{display:inline-block;font-size:11px;font-weight:bold;letter-spacing:.075em;color:#ffde83}.vol1-prize p{font-size:12px;margin:4px 0;color:#f9e2ae}.vol1-prize a{display:inline-block;margin:3px auto 0;padding:5px 11px;background:linear-gradient(#f7deb0,#c89a4d);border:3px double #80501f;color:#3c1b10!important;font-weight:bold;text-decoration:none}.vol1-prize a:hover{background:#ffebc0}.vol1-prize a:focus-visible{outline:2px solid #fff2b8;outline-offset:3px}.vol1-prize[hidden]{display:none!important}@media(max-width:600px){.vol1-prize{padding:21px 22px 20px}.vol1-prize small{font-size:11px}.vol1-prize strong{font-size:clamp(25px,7vw,33px)}}
+</style><style id="feature-alignment">
+/* Only the featured event: unify the poster, prize and action-button rhythm. */
+#latest .feature{box-sizing:border-box;max-width:780px;grid-template-columns:minmax(0,232px) minmax(0,1fr);column-gap:26px;row-gap:18px;align-items:start;padding:24px}
+#latest #feature-image{display:block;width:100%;height:auto;max-height:none;object-fit:contain;align-self:start;margin:0}
+#latest #feature-image[hidden]{display:none!important}
+#latest .feature:has(#feature-image[hidden]){grid-template-columns:minmax(0,1fr)}
+#latest .feature-info{min-width:0;text-align:left}
+#latest .feature-info h3{margin:7px 0 12px;font-size:clamp(25px,3.5vw,34px);line-height:1.3}
+#latest #feature-details,#latest #countdown{margin:10px 0;line-height:1.6}
+#latest .vol1-prize{box-sizing:border-box;width:100%;max-width:none;margin:14px 0 0;padding:22px 24px 21px}
+#latest .vol1-prize strong{font-size:clamp(25px,4vw,35px)}
+#latest #feature-links{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,155px),1fr));gap:10px;margin-top:14px}
+#latest #feature-links:empty{display:none}
+#latest #feature-links .poster-action{box-sizing:border-box;width:100%;max-width:none;margin:0;min-height:44px;display:flex;align-items:center;justify-content:center;padding:9px 6px;line-height:1.5}
+@media(max-width:650px){
+ #latest .feature{grid-template-columns:minmax(0,1fr);padding:16px;gap:16px;max-width:440px}
+ #latest #feature-image{width:min(100%,185px);margin:auto}
+ #latest .feature-info{text-align:center}
+ #latest .feature-info h3{font-size:25px}
+ #latest .vol1-prize{margin:12px auto 0;padding:22px 24px 21px}
+ #latest .vol1-prize strong{font-size:clamp(24px,7vw,33px)}
+ #latest #feature-links{grid-template-columns:1fr;gap:9px}
+}
 </style></head>
 <body id="top">
 <a class="skip-link" href="#tournaments">大会一覧へスキップ</a>
